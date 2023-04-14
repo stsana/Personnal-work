@@ -1,0 +1,171 @@
+---
+title: "Analyses Bivaries"
+author: "Sinclair Tsana"
+date: "21 aout�t 2019"
+output: html_document
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Cette activité est éffectuer dans le cadre des cours certifiants d'**OpenClassroom**.Comme son titre l'indique, elle porte sur **L'analyse Bivariées**.Nous devons répondre une série de quatre questions.Pour ce faire, nous avons préférer utiliser **Rmarkdown** pour sa facilité d'utilisation.
+
+Nous avons divisé notre travail en deux parties.Dans une première partie, nous allons préparer nos données en les nettoyant, et en les visualisant.Dans une seconde partie, nous allons procéder à la réponse aux questions posées en analysant ces données.
+
+# 1ère partie: Préparation des données
+
+## Chargement des données
+
+```{r}
+iris = read.csv("iris_dataset.csv",header = TRUE)
+head(iris) # les six premières lignes
+```
+
+## Suppression de la colonne identifiant
+```{r}
+iris["id"] = NULL
+```
+
+Les six prmières lignes de notre jeu de données montrent la présence des valeurs manquantes.Nous allons les supprimer dans un premier temps.
+
+## Suppression des valeurs manquantes
+```{r}
+iris_dna = na.omit(iris)
+sprintf("iris : %i individus, iris_dna : %i individus",nrow(iris),nrow(iris_dna))
+```
+## Affichages des nuages de points
+```{r}
+pairs(iris_dna[1:4], pch = 21,cex = 1.5,bg = c("red", "green3", "blue")[unclass(iris$species)])
+```
+
+
+##Séparation des epèces de fleurs
+```{r}
+iris_setosa = iris_dna[iris_dna["species"] == "setosa",]
+iris_virginica = iris_dna[iris_dna["species"] == "virginica",]
+iris_versicolor = iris_dna[iris_dna["species"] == "versicolor",]
+```
+
+
+# 2ème partie: Réponses aux Questions
+
+## Question 1: Calcul des coéfficients de corrélation linéaire
+
+### **petal_width en fonction de petal_length**
+```{r}
+x = iris_dna$petal_length
+y = iris_dna$petal_width
+model1 = lm(y ~ x)
+summary(model1)$r.squared
+```
+### **sepal_width en fonction de petal_width**
+```{r}
+x = iris_dna$petal_length
+y = iris_dna$sepal_width
+model2 =lm(y ~ x)
+summary(model2)$r.squared
+```
+## Question 2: Commentaires sur les résultats de la première question
+
+- Nous avons obtenu la valeur **0.8871412**, soit **88,71%** comme  coéfficient de corrélation linéaire entre les variables **petal_width** et **petal_length**.Ceci signifie que le lien linéaire entre ces deux variables est **fort**.
+
+- Puis **0.1940728** soit **19,4%** commme coéfficient de corrélation entre les variables **sepal_width** et **petal_width**.Donc le lien entre ces deux variables est **non linéaire**.
+
+## Question 3: Régressions linéaires
+
++ **cas 1:** petal_width = a*petal_length + b + résidu
+
+
+```{r}
+x = iris_dna$petal_length
+y = iris_dna$petal_width
+fit = lm(y ~ x)
+coeffs1 = coef(fit)
+sprintf(" Estimations obtenues: a = %f et b = %f",coeffs1[2], coeffs1[1]) 
+```
+
+
++ **cas 2:** sepal_width = a*petal_width + b + résidu
+
+```{r}
+x = iris_setosa$petal_width
+y = iris_setosa$sepal_width
+fit = lm(y ~ x)
+coeffs2 = coef(fit)
+sprintf("Estimations obtenues: a = %f et b = %f",coeffs2[2], coeffs2[1]) 
+```
+
+
++ **cas 3:** sepal_width = a*petal_width + b + résidu
+
+```{r}
+x = iris_virginica$petal_width
+y = iris_virginica$sepal_width
+fit = lm(y ~ x)
+coeffs3 = coef(fit)
+sprintf("Estimations obtenues: a = %f et b = %f",coeffs3[2], coeffs3[1]) 
+```
+
++ **cas 4**: sepal_width = a*petal_width + b + résidu
+
+```{r}
+x = iris_versicolor$petal_width
+y = iris_versicolor$sepal_width
+fit = lm(y ~ x)
+coeffs4 = coef(fit)
+sprintf("Estimations obtenues: a = %f et b = %f",coeffs4[2], coeffs4[1]) 
+```
+## Question 4: Imputation des valeurs manquantes par les valeurs prédites
+
+```{r}
+coeffs = list(
+    "cas 1" = list('a'=coeffs1[2] , 'b'=coeffs1[1]),
+    "cas 2" = list('a'=coeffs2[2] , 'b'=coeffs2[1]),
+    "cas 3" = list('a'=coeffs3[2] , 'b'=coeffs3[1]),
+    "cas 4" = list('a'=coeffs4[2] , 'b'=coeffs4[1])
+)
+lignes_modifiees = c()
+for(i in 1:nrow(iris)){ # pour chaque individu de iris,...
+    individu = iris[i,]
+    if(is.na(individu["petal_width"])){ #... on test si individu["petal_width"] est nul.
+a = coeffs[["cas 1"]][['a']]
+        b = coeffs[["cas 1"]][['b']]
+        X = individu["petal_length"]
+        Y = a*X + b
+        iris[i,"petal_width"] = Y # on remplace la valeur manquante par Y
+        lignes_modifiees = c(lignes_modifiees, i)
+        print(sprintf("On a complété petal_width par %f a partir de petal_length=%f",Y,X))
+    }
+    if(is.na(individu["sepal_width"])){
+        espece = individu["species"]
+        a = coeffs[["cas 4"]][['a']]
+        b = coeffs[["cas 4"]][['b']]
+        X = individu["petal_width"]
+        Y = a*X + b
+        iris[i, "sepal_width"] = Y
+        lignes_modifiees = c(lignes_modifiees,i)
+        print(sprintf("On a complété sepal_width par %f a partir de l'espece %s et de petal_width=%f",Y,espece,X))
+    }
+}
+print("Lignes modifiées:")
+print(lignes_modifiees)
+
+```
+```{r tableau}
+ DT::datatable(iris)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
