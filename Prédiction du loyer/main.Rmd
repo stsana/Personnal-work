@@ -1,0 +1,115 @@
+---
+title: "EXERCICE "
+author: "Sinclair Tsana"
+date: "18 juin 2019"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Thème: Amélioration du modèle de prédiction du loyer
+
+
+Il nous a été demandé de proposer deux moyens pour améliorer les performances du modèle prédictif constuit pendant le cours en utilisant de nouvelles données.Pour ce faire, nous allons dans une première partie visualiser ensemble les données afin de décider en toute quiétute quelles modèles adopter pour obtenir de meilleurs performances.Dans une seconde partie, on présentera de manière détaillée les deux modèles présélectionnées. 
+
+### Les librairies nécéssaires
+```{r}
+require(stats)            # le package R pour les calculs statistique
+```
+## Importation et séparation Training and Testing datasets
+```{r}
+data =read.csv("house_data.csv")
+summary(is.na(data))    # On vérifie s'il y'a des données manquantes 
+data_incomplete = data[!complete.cases(data), ]
+data = data [complete.cases(data), ]      #on utilise les données ne comportant pas des cases vides
+n = 827    # nombre des lignes ne possédant pas de cases vides
+sample = sample(1:n, size = round(0.8*n), replace = FALSE)
+data_train = data [ sample, ]  #data_train constitue 80% de toutes les données soit 0.8x827
+data_test = data[-sample, ]    #data_test constitue 20% soit le reste des données
+```
+
+## Résumé des données
+```{r}
+head(data)   # Affichage des 6 premières lignes 
+tail(data)   # Affichage des 6 dernières lignes 
+do.call(cbind, lapply(data, summary)) #Résumé des données en colonnes
+```
+
+## Visualisation des données
+```{r}
+nuage1 = plot(data$surface, data$price, xlab = "surface", ylab = "price", main ="dispersion du prix en fonction de la surface", col = "steelblue")
+
+nuage2 = plot(data$arrondissement, data$price, xlab = "arrondissement", ylab = "price", main ="dispersion du prix en fonction de l'arrondissement", col = "coral")
+
+nuage3 = plot(data, main = "lien linéaire entre les 3 variables ")
+```
+
+
+
+### Observations
+
+#### nuage1
+
+En regardant de cette disperssion, on constate qu'il existe un lien linéaire entre les variables "Surface" et "Prix".
+
+#### nuage2
+
+Cette autre disperssion ne met pas en exergue un lien linéaire entre les variables "arrondissement" et "prix".
+
+#### nuage3
+
+En associant les deux variables "surface" et "Arrondissement", on constate un lien linéaire entre les trois variables en question.
+
+Il est donc plus judicieux de prédire le prix du loyer soit par la "surface", soit en utilisant ensemble les deux variables "surface" et "arrondissement" 
+
+## Construction des deux modèles de Regression linéaire 
+
+
+### Modèle1: régression linéaire simple  prix = A + B x suface + Résidu 
+```{r}
+model1 = lm(price ~ surface, data_train)
+summary(model1)
+```
+
+#### prédictions
+```{r} 
+predictions = predict(model1, data_test)
+predictions
+```
+
+```{r}
+graph1 = plot(data$surface, data$price, xlab = "surface", ylab = "price", main ="prédiction en fonction de la surface", col = "steelblue")
+abline(model1, lwd = 3, col = "darkorange")
+```
+
+#### Les coéfficients
+```{r}
+coef(model1)
+```
+
+```{r}
+summary(model1)
+```
+
+#### Model2: régression linéaire multiple  * prix = A + B x surface + c x arrondissement + Résidu *
+```{r}
+model2 = lm(price ~ surface +arrondissement, data_train)
+summary(model2)
+```
+#### prédictions
+```{r} 
+predictions = predict(model2, data_test)
+predictions
+```
+#### les coefficients
+```{r}
+coef(model2)
+```
+
+```{r}
+summary(model2)
+```
